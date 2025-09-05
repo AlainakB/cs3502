@@ -1,0 +1,17 @@
+# Compiled files
+*.o
+o*.out
+a.out
+hello
+employee
+
+# Log files
+*.log
+
+# Editor backup files
+*.swp
+*.bak
+
+# OS files
+.DS_Store
+Thumbs.db
