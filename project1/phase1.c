@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <time.h> 
 
 #define NUM_ACCOUNTS 3
 #define NUM_THREADS 4
@@ -19,7 +20,7 @@ Account accounts[NUM_ACCOUNTS];
 // Thread function
 void* teller_thread(void* arg) {
     int teller_id = *(int*) arg;  // Cast void* to int* and dereference
-    unsigned int seed = teller_id;
+    unsigned int seed = time(NULL);
     
     
 
