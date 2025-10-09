@@ -15,3 +15,5 @@ employee
 # OS files
 .DS_Store
 Thumbs.db
+project1/.vscode/launch.json
+project1/.vscode/tasks.json
