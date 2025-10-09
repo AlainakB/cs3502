@@ -81,7 +81,7 @@ int main() {
         accounts[i].transaction_count = 0;
     }
 
-
+    clock_t start = clock();
     // Create threads
     pthread_t threads[NUM_THREADS];
     int thread_ids[NUM_THREADS];
@@ -96,11 +96,17 @@ int main() {
         pthread_join(threads[i], NULL);
     }
 
+    clock_t end = clock();
+
+    double performance = (double)(end - start) / CLOCKS_PER_SEC;
+
     // Print final balances
     printf("\nFinal Account Balances:\n");
     for (int i = 0; i < NUM_ACCOUNTS; i++) {
         printf("Account %d: $%.2f\n", accounts[i].account_id, accounts[i].balance);
     }
+
+    printf("\nFinal performance time (with mutexes):%lf seconds\n", performance);
 
     return 0;
 }
