@@ -64,6 +64,12 @@ void* teller_thread(void* arg) {
         {
           printf("Thread %i: Withdrawing $%d\n", teller_id, money);
           withdrawal(accounts[randIndex].account_id, money);
+          if (accounts[randIndex].balance < 0)
+          {
+            accounts[randIndex].balance += money;
+            printf("Transaction denied. Not enough balance to withdraw.");
+          }
+          
         }
         
         printf("Teller %d: Transaction %d for account %d\n\n", teller_id, i, accounts[randIndex].account_id);

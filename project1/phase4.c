@@ -1,4 +1,3 @@
-// Canon
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -36,6 +35,13 @@ void transfer (int from_id , int to_id , double amount) {
   
   accounts[from_id].balance -= amount;
   accounts[to_id].balance += amount;
+
+    if (accounts[from_id].balance < 0)
+    {
+        accounts[from_id].balance += amount;
+        accounts[to_id].balance -= amount;
+        printf("Transaction denied. Not enough balance to tranfer.");
+    }
   
   pthread_mutex_unlock(&accounts[upper].lock);
   pthread_mutex_unlock(&accounts[lower].lock);

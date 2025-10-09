@@ -33,6 +33,13 @@ void transfer (int from_id , int to_id , double amount) {
   
   accounts[from_id].balance -= amount;
   accounts[to_id].balance += amount;
+
+  if (accounts[from_id].balance < 0)
+    {
+        accounts[from_id].balance += amount;
+        accounts[to_id].balance -= amount;
+        printf("Transaction denied. Not enough balance to tranfer.");
+    }
   
   pthread_mutex_unlock(&accounts[to_id].lock);
   pthread_mutex_unlock(&accounts[from_id].lock);
@@ -57,7 +64,7 @@ void* teller_thread(void* arg) {
         printf("Initial balance : $%.2f\n", accounts[randIndex].balance);
         
         printf("Thread %i: Transferring $%d\n", teller_id, money);
-          transfer(accounts[randIndex].account_id, accounts[randIndex2].account_id, money);
+        transfer(accounts[randIndex].account_id, accounts[randIndex2].account_id, money);
       
         printf("Teller %d: Transaction %d for account %d\n\n", teller_id, i, accounts[randIndex].account_id);
     }
