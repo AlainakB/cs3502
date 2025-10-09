@@ -28,7 +28,7 @@ void transfer (int from_id , int to_id , double amount) {
   pthread_mutex_lock(&accounts[lower].lock);
   printf("Thread %lu: Locked account %d\n", pthread_self(), lower);
   
-//   usleep(100);
+//   usleep((from_id + to_id) * time(NULL) % 1001) ; //random sleeping edgge case
   
   printf("Thread %lu: Waiting for account %d\n", pthread_self(), upper);
   pthread_mutex_lock(&accounts[upper].lock);
@@ -40,7 +40,7 @@ void transfer (int from_id , int to_id , double amount) {
     {
         accounts[from_id].balance += amount;
         accounts[to_id].balance -= amount;
-        printf("Transaction denied. Not enough balance to tranfer.");
+        printf("Transaction denied. Not enough balance to tranfer.\n");
     }
   
   pthread_mutex_unlock(&accounts[upper].lock);
@@ -67,12 +67,17 @@ void* teller_thread(void* arg) {
         
         // TODO: Perform deposit or withdrawal (this will have race conditions!)
         int choice = (rand_r(&seed)) % 2;
-        int money = (rand_r(&seed)) % 101;
+        int money = (rand_r(&seed)) % 501;
         
         printf("Initial balance : $%.2f\n", accounts[randIndex].balance);
         
         printf("Thread %i: Transferring $%d\n", teller_id, money);
-          transfer(accounts[randIndex].account_id, accounts[randIndex2].account_id, money);
+        if (randIndex > NUM_ACCOUNTS || randIndex < 0)
+        {
+        printf("Account %d does not exist, cancelling transaction.\n", randIndex);
+        return 1;
+        }
+        transfer(accounts[randIndex].account_id, accounts[randIndex2].account_id, money);
       
         printf("Teller %d: Transaction %d for account %d\n\n", teller_id, i, accounts[randIndex].account_id);
     }
@@ -106,6 +111,12 @@ int main() {
 
   for ( int i = 0; i < NUM_ACCOUNTS; i++) {
         pthread_mutex_destroy(&accounts[i].lock);
+    }
+
+    // Print final balances
+    printf("\nFinal Account Balances:\n");
+    for (int i = 0; i < NUM_ACCOUNTS; i++) {
+        printf("Account %d: $%.2f\n", accounts[i].account_id, accounts[i].balance);
     }
 
     return 0;

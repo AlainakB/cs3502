@@ -49,6 +49,8 @@ void* teller_thread(void* arg) {
     for (int i = 0; i < TRANSACTIONS_PER_TELLER; i++) {
         // TODO: Select random account
         int randIndex = rand_r (&seed) % NUM_ACCOUNTS; // from 0 to n - 1
+
+
         
         // TODO: Perform deposit or withdrawal (this will have race conditions!)
         int choice = (rand_r(&seed) + time(NULL)) % 2;
@@ -58,11 +60,21 @@ void* teller_thread(void* arg) {
         if (choice == 0)
         { 
           printf("Thread %i: Depositing $%d\n", teller_id, money);
+          if (randIndex > NUM_ACCOUNTS || randIndex < 0)
+          {
+            printf("Account %d does not exist, cancelling transaction.\n", randIndex);
+            return 1;
+          }
           deposit(accounts[randIndex].account_id, money);
         }
         else
         {
           printf("Thread %i: Withdrawing $%d\n", teller_id, money);
+          if (randIndex > NUM_ACCOUNTS || randIndex < 0)
+          {
+            printf("Account %d does not exist, cancelling transaction.\n", randIndex);
+            return 1;
+          }
           withdrawal(accounts[randIndex].account_id, money);
           if (accounts[randIndex].balance < 0)
           {

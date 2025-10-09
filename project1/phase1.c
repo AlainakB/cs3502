@@ -36,17 +36,28 @@ void* teller_thread(void* arg) {
         if (choice == 0)
         {
           printf("Thread %i: Depositing $%d\n", teller_id, money);
+          if (randIndex > NUM_ACCOUNTS || randIndex < 0)
+          {
+            printf("Account %d does not exist, cancelling transaction.\n", randIndex);
+            return 1;
+          } // Handles non-existant account edge case
+
           accounts[randIndex].balance += money;
         }
         else
         {
           printf("Thread %i: Withdrawing $%d\n", teller_id, money);
+          if (randIndex > NUM_ACCOUNTS || randIndex < 0)
+          {
+            printf("Account %d does not exist, cancelling transaction.\n", randIndex);
+            return 1;
+          }
           accounts[randIndex].balance -= money;
           if (accounts[randIndex].balance < 0)
           {
             accounts[randIndex].balance += money;
-            printf("Transaction denied. Not enough balance to withdraw.");
-          }
+            printf("Transaction denied. Not enough balance to withdraw.\n");
+          } // Prevents negative balance
         }
         
         accounts[randIndex].transaction_count += 1;
