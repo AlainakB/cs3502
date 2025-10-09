@@ -20,7 +20,7 @@ Account accounts[NUM_ACCOUNTS];
 // Thread function
 void* teller_thread(void* arg) {
     int teller_id = *(int*) arg;  // Cast void* to int* and dereference
-    unsigned int seed = time(NULL);
+    unsigned int seed = time(NULL) + teller_id;
     
     
 
@@ -61,7 +61,7 @@ void* teller_thread(void* arg) {
         }
         
         accounts[randIndex].transaction_count += 1;
-        printf("Teller %d: Transaction %d\n\n", teller_id, i);
+        printf("Teller %d: Transaction %d for account %d\n\n", teller_id, i, accounts[randIndex].account_id);
     }
 
     return NULL;
