@@ -67,7 +67,7 @@ void* teller_thread(void* arg) {
         if (randIndex > NUM_ACCOUNTS || randIndex < 0)
         {
         printf("Account %d does not exist, cancelling transaction.\n", randIndex);
-        return 1;
+        return NULL;
         }
         transfer(accounts[randIndex].account_id, accounts[randIndex2].account_id, money);
       
