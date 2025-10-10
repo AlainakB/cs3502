@@ -3,9 +3,9 @@
 #include <pthread.h>
 #include <time.h>
 
-#define NUM_ACCOUNTS 3
-#define NUM_THREADS 4
-#define TRANSACTIONS_PER_TELLER 5
+#define NUM_ACCOUNTS 1
+#define NUM_THREADS 6
+#define TRANSACTIONS_PER_TELLER 10
 
 typedef struct {
     int account_id;
@@ -25,7 +25,10 @@ void deposit (int account_id , double amount) {
         return;
   }
   // Critical section - only one thread can execute this at a time
-  accounts[account_id].balance += amount;
+  printf("Depositing $%.2f\n", amount);
+  double temp = accounts[account_id].balance;
+  usleep(100);
+  accounts[account_id].balance = (temp + amount);
   accounts[account_id].transaction_count++;
   pthread_mutex_unlock(&accounts[account_id].lock);
 }
@@ -35,8 +38,12 @@ void withdrawal (int account_id , double amount) {
         perror("Failed to acquire lock for withdrawal");
         return;
   }
-  accounts[account_id].balance -= amount;
+  printf("Withdrawing $%.2f\n", amount);
+  double temp = accounts[account_id].balance;
+  usleep(100);
+  accounts[account_id].balance = (temp - amount);
   accounts[account_id].transaction_count++;
+  printf("Updated balance: $%.2f\n", accounts[account_id].balance);
   pthread_mutex_unlock(&accounts[account_id].lock);
 }
 
@@ -54,12 +61,18 @@ void* teller_thread(void* arg) {
         
         // TODO: Perform deposit or withdrawal (this will have race conditions!)
         int choice = (rand_r(&seed) + time(NULL)) % 2;
-        int money = (rand_r(&seed) + time(NULL)) % 101;
+        // int money = (rand_r(&seed) + time(NULL)) % 101;
+        int money = 5;
         
+        if (pthread_mutex_lock(&accounts[randIndex].lock) != 0) {
+        perror("Failed to acquire lock for deposit");
+        return;
+        }   
         printf("Initial balance : $%.2f\n", accounts[randIndex].balance);
+        pthread_mutex_unlock(&accounts[randIndex].lock);
         if (choice == 0)
         { 
-          printf("Thread %i: Depositing $%d\n", teller_id, money);
+          
           if (randIndex > NUM_ACCOUNTS || randIndex < 0)
           {
             printf("Account %d does not exist, cancelling transaction.\n", randIndex);
@@ -69,7 +82,6 @@ void* teller_thread(void* arg) {
         }
         else
         {
-          printf("Thread %i: Withdrawing $%d\n", teller_id, money);
           if (randIndex > NUM_ACCOUNTS || randIndex < 0)
           {
             printf("Account %d does not exist, cancelling transaction.\n", randIndex);
@@ -112,6 +124,11 @@ int main() {
     // Wait for threads to finish
     for (int i = 0; i < NUM_THREADS; i++) {
         pthread_join(threads[i], NULL);
+    }
+
+    // Destroy mutexes for each account
+    for (int i = 0; i < NUM_ACCOUNTS; i++) {
+      pthread_mutex_destroy(&accounts[i].lock);
     }
 
     clock_t end = clock();
