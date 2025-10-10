@@ -3,9 +3,9 @@
 #include <pthread.h>
 #include <time.h> 
 
-#define NUM_ACCOUNTS 3
-#define NUM_THREADS 4
-#define TRANSACTIONS_PER_TELLER 5
+#define NUM_ACCOUNTS 1
+#define NUM_THREADS 6
+#define TRANSACTIONS_PER_TELLER 10
 
 // Shared data structure
 typedef struct {
@@ -31,28 +31,32 @@ void* teller_thread(void* arg) {
         printf("Initial balance : $%.2f\n", accounts[randIndex].balance);
         // TODO: Perform deposit or withdrawal (this will have race conditions!)
         int choice = rand_r(&seed) % 2;
-        int money = rand_r(&seed) % 1001;
+        // int money = rand_r(&seed) % 1001;
+        int money = 5;
         
         if (choice == 0)
         {
-          printf("Thread %i: Depositing $%d\n", teller_id, money);
           if (randIndex > NUM_ACCOUNTS || randIndex < 0)
           {
             printf("Account %d does not exist, cancelling transaction.\n", randIndex);
-            return 1;
+            return NULL;
           } // Handles non-existant account edge case
-
-          accounts[randIndex].balance += money;
+          double temp = accounts[randIndex].balance;
+          usleep(100);
+          accounts[randIndex].balance = (temp + money);
+          printf("Thread %i: Depositing $%d\n", teller_id, money);
         }
         else
         {
-          printf("Thread %i: Withdrawing $%d\n", teller_id, money);
           if (randIndex > NUM_ACCOUNTS || randIndex < 0)
           {
             printf("Account %d does not exist, cancelling transaction.\n", randIndex);
-            return 1;
+            return NULL;
           }
-          accounts[randIndex].balance -= money;
+          double temp = accounts[randIndex].balance;
+          usleep(100);
+          accounts[randIndex].balance = (temp - money);
+          printf("Thread %i: Withdrawing $%d\n", teller_id, money);
           if (accounts[randIndex].balance < 0)
           {
             accounts[randIndex].balance += money;
@@ -94,7 +98,5 @@ int main() {
     for (int i = 0; i < NUM_ACCOUNTS; i++) {
         printf("Account %d: %.2f\n", accounts[i].account_id, accounts[i].balance);
     }
-
     return 0;
 }
-
