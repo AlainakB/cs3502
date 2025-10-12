@@ -14,41 +14,54 @@ typedef struct {
     int transaction_count;
 } Account;
 
+// Stores a record of a transaction
+typedef struct {
+    int teller_id;
+    int account_id;
+    double amount;
+    double initial_balance;
+    double final_balance;
+    int choice; // 1 for deposit, 0 for withdrawal
+} Transaction_Log;
+
 // Global accounts array (shared resource)
 Account accounts[NUM_ACCOUNTS];
+
+// Global transaction log for threads to store transactions
+Transaction_Log  transactions[NUM_THREADS * TRANSACTIONS_PER_TELLER];
 
 // Thread function
 void* teller_thread(void* arg) {
     int teller_id = *(int*) arg;  // Cast void* to int* and dereference
     unsigned int seed = time(NULL) + teller_id;
-    
-    
 
     // Perform multiple transactions
     for (int i = 0; i < TRANSACTIONS_PER_TELLER; i++) {
+        int transaction_index = teller_id * TRANSACTIONS_PER_TELLER + i; // transaction log for ith transaction
         // TODO: Select random account
+        // int randIndex = rand_r(&seed) % NUM_ACCOUNTS; //from 0 to n - 1
         int randIndex = rand_r(&seed) % NUM_ACCOUNTS; //from 0 to n - 1
-        printf("Initial balance : $%.2f\n", accounts[randIndex].balance);
-        // TODO: Perform deposit or withdrawal (this will have race conditions!)
+
+        transactions[transaction_index].initial_balance = accounts[randIndex].balance;
         int choice = rand_r(&seed) % 2;
-        // int money = rand_r(&seed) % 1001;
-        int money = 5;
+        // double money = rand_r(&seed) % 1001;
+        double money = 5;
         
         if (choice == 0)
         {
-          if (randIndex > NUM_ACCOUNTS || randIndex < 0)
+          if (randIndex < 0 || randIndex >= NUM_ACCOUNTS)
           {
             printf("Account %d does not exist, cancelling transaction.\n", randIndex);
             return NULL;
           } // Handles non-existant account edge case
           double temp = accounts[randIndex].balance;
           usleep(100);
+
           accounts[randIndex].balance = (temp + money);
-          printf("Thread %i: Depositing $%d\n", teller_id, money);
         }
         else
         {
-          if (randIndex > NUM_ACCOUNTS || randIndex < 0)
+          if (randIndex < 0 || randIndex >= NUM_ACCOUNTS)
           {
             printf("Account %d does not exist, cancelling transaction.\n", randIndex);
             return NULL;
@@ -56,17 +69,19 @@ void* teller_thread(void* arg) {
           double temp = accounts[randIndex].balance;
           usleep(100);
           accounts[randIndex].balance = (temp - money);
-          printf("Thread %i: Withdrawing $%d\n", teller_id, money);
           if (accounts[randIndex].balance < 0)
           {
             accounts[randIndex].balance += money;
-            printf("Transaction denied. Not enough balance to withdraw.\n");
           } // Prevents negative balance
         }
-        
+
+        // Each transaction has its own index -> no race condition
         accounts[randIndex].transaction_count += 1;
-        printf("Teller %d: Transaction %d for account %d\n\n", teller_id, i, accounts[randIndex].account_id);
-    }
+        transactions[transaction_index].teller_id = teller_id;
+        transactions[transaction_index].account_id = accounts[randIndex].account_id;
+        transactions[transaction_index].amount = money;
+        transactions[transaction_index].choice = choice;
+        }
 
     return NULL;
 }
@@ -92,11 +107,42 @@ int main() {
     for (int i = 0; i < NUM_THREADS; i++) {
         pthread_join(threads[i], NULL);
     }
+    
+    double expected_result[NUM_ACCOUNTS];
+    for (int i = 0; i < NUM_ACCOUNTS; i++)
+    {
+      expected_result[i] = 1000; // intializies expected balance t0 0
+    }
+
+    // Uses the transaction log to serially calculate the balance from what the threads reported
+    for (int i = 0; i < (NUM_THREADS * TRANSACTIONS_PER_TELLER); i++)
+    { 
+      int index = transactions[i].account_id;
+      printf("Initial balance : $%.2f\n", transactions[i].initial_balance);
+      if (!transactions[i].choice) // deposit == 0
+      {
+        printf("Thread %i: Depositing $%.2f\n", transactions[i].teller_id, transactions[i].amount);
+        expected_result[index] += transactions[i].amount;
+      }
+      else
+      {
+        printf("Thread %i: Withdrawing $%.2f\n", transactions[i].teller_id, transactions[i].amount);
+        expected_result[index] -= transactions[i].amount;
+      }
+      if (expected_result[index] < 0)
+      {
+        expected_result[index] += transactions[i].amount;
+        printf("Transaction denied. Not enough balance to withdraw.\n");
+      } // Prevents negative balance
+      printf("Teller %d: Transaction %d for account %d\n\n", transactions[i].teller_id, i, transactions[i].account_id);
+
+    }
 
     // Print final balances
     printf("\nFinal Account Balances:\n");
     for (int i = 0; i < NUM_ACCOUNTS; i++) {
         printf("Account %d: %.2f\n", accounts[i].account_id, accounts[i].balance);
+        printf("Expected: %.2f\n", expected_result[i]);
     }
     return 0;
 }
