@@ -7,6 +7,7 @@ x86/
 [Oo]bj/
 
 # Visual Studio files
+.vs/
 *.suo
 *.user
 *.sln.docstates

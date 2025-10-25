@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
@@ -16,7 +17,7 @@ namespace CpuScheduler
         private DataTable processTable;
         private Random random = new Random();
         private bool isDarkMode = true; // Default to dark mode
-        
+
         // STUDENTS: Configure these limits based on your algorithm performance requirements
         private const int MIN_PROCESS_COUNT = 1;
         private const int MAX_PROCESS_COUNT = 100;
@@ -248,17 +249,17 @@ Instructions:
         {
             var results = new List<SchedulingResult>();
             var currentTime = 0;
-            
+
             // Sort by arrival time for FCFS
             var sortedProcesses = processes.OrderBy(p => p.ArrivalTime).ToList();
-            
+
             foreach (var process in sortedProcesses)
             {
                 var startTime = Math.Max(currentTime, process.ArrivalTime);
                 var finishTime = startTime + process.BurstTime;
                 var waitingTime = startTime - process.ArrivalTime;
                 var turnaroundTime = finishTime - process.ArrivalTime;
-                
+
                 results.Add(new SchedulingResult
                 {
                     ProcessID = process.ProcessID,
@@ -267,12 +268,13 @@ Instructions:
                     StartTime = startTime,
                     FinishTime = finishTime,
                     WaitingTime = waitingTime,
-                    TurnaroundTime = turnaroundTime
+                    TurnaroundTime = turnaroundTime,
+                    ResponseTime = startTime - process.ArrivalTime
                 });
-                
+
                 currentTime = finishTime;
             }
-            
+
             return results;
         }
 
@@ -285,27 +287,27 @@ Instructions:
             var results = new List<SchedulingResult>();
             var currentTime = 0;
             var remainingProcesses = processes.ToList();
-            
+
             while (remainingProcesses.Count > 0)
             {
                 // Get processes that have arrived by current time
                 var availableProcesses = remainingProcesses.Where(p => p.ArrivalTime <= currentTime).ToList();
-                
+
                 if (availableProcesses.Count == 0)
                 {
                     // No process has arrived yet, jump to next arrival time
                     currentTime = remainingProcesses.Min(p => p.ArrivalTime);
                     continue;
                 }
-                
+
                 // Select process with shortest burst time
                 var nextProcess = availableProcesses.OrderBy(p => p.BurstTime).ThenBy(p => p.ArrivalTime).First();
-                
+
                 var startTime = Math.Max(currentTime, nextProcess.ArrivalTime);
                 var finishTime = startTime + nextProcess.BurstTime;
                 var waitingTime = startTime - nextProcess.ArrivalTime;
                 var turnaroundTime = finishTime - nextProcess.ArrivalTime;
-                
+
                 results.Add(new SchedulingResult
                 {
                     ProcessID = nextProcess.ProcessID,
@@ -314,13 +316,14 @@ Instructions:
                     StartTime = startTime,
                     FinishTime = finishTime,
                     WaitingTime = waitingTime,
-                    TurnaroundTime = turnaroundTime
+                    TurnaroundTime = turnaroundTime,
+                    ResponseTime = startTime - nextProcess.ArrivalTime
                 });
-                
+
                 currentTime = finishTime;
                 remainingProcesses.Remove(nextProcess);
             }
-            
+
             return results.OrderBy(r => r.StartTime).ToList();
         }
 
@@ -333,27 +336,27 @@ Instructions:
             var results = new List<SchedulingResult>();
             var currentTime = 0;
             var remainingProcesses = processes.ToList();
-            
+
             while (remainingProcesses.Count > 0)
             {
                 // Get processes that have arrived by current time
                 var availableProcesses = remainingProcesses.Where(p => p.ArrivalTime <= currentTime).ToList();
-                
+
                 if (availableProcesses.Count == 0)
                 {
                     // No process has arrived yet, jump to next arrival time
                     currentTime = remainingProcesses.Min(p => p.ArrivalTime);
                     continue;
                 }
-                
+
                 // Select process with highest priority (highest number)
                 var nextProcess = availableProcesses.OrderByDescending(p => p.Priority).ThenBy(p => p.ArrivalTime).First();
-                
+
                 var startTime = Math.Max(currentTime, nextProcess.ArrivalTime);
                 var finishTime = startTime + nextProcess.BurstTime;
                 var waitingTime = startTime - nextProcess.ArrivalTime;
                 var turnaroundTime = finishTime - nextProcess.ArrivalTime;
-                
+
                 results.Add(new SchedulingResult
                 {
                     ProcessID = nextProcess.ProcessID,
@@ -362,13 +365,14 @@ Instructions:
                     StartTime = startTime,
                     FinishTime = finishTime,
                     WaitingTime = waitingTime,
-                    TurnaroundTime = turnaroundTime
+                    TurnaroundTime = turnaroundTime,
+                    ResponseTime = startTime - nextProcess.ArrivalTime
                 });
-                
+
                 currentTime = finishTime;
                 remainingProcesses.Remove(nextProcess);
             }
-            
+
             return results.OrderBy(r => r.StartTime).ToList();
         }
 
@@ -383,7 +387,7 @@ Instructions:
             var processQueue = new Queue<ProcessData>();
             var processResults = new Dictionary<string, SchedulingResult>();
             var remainingBurstTimes = new Dictionary<string, int>();
-            
+
             // Initialize remaining burst times and results
             foreach (var process in processes)
             {
@@ -399,15 +403,15 @@ Instructions:
                     TurnaroundTime = 0
                 };
             }
-            
+
             // Add processes that arrive at time 0
             foreach (var process in processes.Where(p => p.ArrivalTime <= currentTime).OrderBy(p => p.ArrivalTime))
             {
                 processQueue.Enqueue(process);
             }
-            
+
             var processesNotInQueue = processes.Where(p => p.ArrivalTime > currentTime).OrderBy(p => p.ArrivalTime).ToList();
-            
+
             while (processQueue.Count > 0 || processesNotInQueue.Count > 0)
             {
                 // Add any processes that have now arrived
@@ -416,35 +420,36 @@ Instructions:
                     processQueue.Enqueue(processesNotInQueue[0]);
                     processesNotInQueue.RemoveAt(0);
                 }
-                
+
                 if (processQueue.Count == 0)
                 {
                     // No processes in queue, jump to next arrival
                     currentTime = processesNotInQueue[0].ArrivalTime;
                     continue;
                 }
-                
+
                 var currentProcess = processQueue.Dequeue();
                 var result = processResults[currentProcess.ProcessID];
-                
+
                 // Set start time if this is the first execution
                 if (result.StartTime == -1)
                 {
                     result.StartTime = currentTime;
+                    result.ResponseTime = result.StartTime - result.ArrivalTime;
                 }
-                
+
                 // Execute for quantum time or remaining burst time, whichever is smaller
                 var executionTime = Math.Min(quantumTime, remainingBurstTimes[currentProcess.ProcessID]);
                 currentTime += executionTime;
                 remainingBurstTimes[currentProcess.ProcessID] -= executionTime;
-                
+
                 // Add any processes that arrived during this execution
                 while (processesNotInQueue.Count > 0 && processesNotInQueue[0].ArrivalTime <= currentTime)
                 {
                     processQueue.Enqueue(processesNotInQueue[0]);
                     processesNotInQueue.RemoveAt(0);
                 }
-                
+
                 // Check if process is completed
                 if (remainingBurstTimes[currentProcess.ProcessID] == 0)
                 {
@@ -458,9 +463,155 @@ Instructions:
                     processQueue.Enqueue(currentProcess);
                 }
             }
-            
+
             return processResults.Values.OrderBy(r => r.StartTime).ToList();
         }
+
+        /// <summary>
+        /// STUDENTS: SRTF algorithm implementation using DataGrid data
+        /// Shortest Remaining Time First - selects process with minimum remaining burst time
+        /// </summary>
+        private List<SchedulingResult> RunSRTFAlgorithm(List<ProcessData> processes)
+        {
+            var results = new List<SchedulingResult>();
+            var currentTime = 0;
+
+            // Makes a list of process state objects (to help with tracking) from the process list
+            var processStates = processes.Select(
+                p => new ProcessState
+                {
+                    Process = p,
+                    RemainingBurst = p.BurstTime,
+                    StartTime = -1,
+                }
+            ).ToList();
+
+            //remainingTimes = remainingProcesses.Select(p => p.BurstTime).ToArray();
+
+            while (processStates.Any(ps => ps.RemainingBurst > 0)) // while any process still has remaining burst time
+            {   
+
+                // Get process states that have arrived by current time / Represents processes that are in a ready state
+                var availableProcessStates = processStates.Where(ps => ps.Process.ArrivalTime <= currentTime && ps.RemainingBurst > 0).ToList(); // Functions as a ready queue
+
+                if (availableProcessStates.Count == 0)
+                {
+                    // No process has arrived yet, jump to next arrival time of any process that still has work to be done
+                    //idleTime += (processStates.Min(ps => ps.Process.ArrivalTime) - currentTime);
+                    currentTime = processStates.Where(ps => ps.RemainingBurst > 0).Min(ps => ps.Process.ArrivalTime);
+                    continue;
+                }
+
+
+                // Select process with shortest burst time AND shortest arrival time (and process ID for a final tie breaker)
+                var nextProcess = availableProcessStates.OrderBy(ps => ps.RemainingBurst).ThenBy(ps => ps.Process.ArrivalTime).ThenBy(ps => ps.Process.ProcessID).First(); // Maps remaining time indexes to process index and finds the minimum
+                //int index = processes.IndexOf(nextProcess);
+               // var startTime = Math.Max(currentTime, nextProcess.Process.ArrivalTime);
+
+                if (nextProcess.StartTime == -1) // If not yet executed at least once. Once the first execution occurs, this will no longer update
+                {
+                    nextProcess.StartTime = currentTime;
+                }
+
+                nextProcess.RemainingBurst--;
+                currentTime++;
+
+                if (nextProcess.RemainingBurst == 0)
+                {
+                    var finishTime = currentTime;
+                    var turnaroundTime = finishTime - nextProcess.Process.ArrivalTime; 
+                    var waitingTime = turnaroundTime - nextProcess.Process.BurstTime; // The amount of time spend not executing during turnaround
+                    var responseTime = nextProcess.StartTime - nextProcess.Process.ArrivalTime;
+
+                    results.Add(new SchedulingResult
+                    {
+                        ProcessID = nextProcess.Process.ProcessID,
+                        ArrivalTime = nextProcess.Process.ArrivalTime,
+                        BurstTime = nextProcess.Process.BurstTime,
+                        StartTime = nextProcess.StartTime, // CPU could access process multiple times, but only the first is relevant
+                        FinishTime = finishTime,
+                        WaitingTime = waitingTime,
+                        ResponseTime = responseTime,
+                        TurnaroundTime = turnaroundTime
+                    });
+
+                    //processStates.Remove(nextProcess);
+                    //remainingProcesses.Remove(nextProcess.Process);
+                }
+
+            }
+
+            return results.OrderBy(r => r.StartTime).ToList();
+        }
+
+        private class ProcessState // A mutable class to track process state without changing the process's attributes. Works with both HRRN and STRF
+        {
+            public ProcessData Process { get; set; }
+            public int RemainingBurst { get; set; }
+            public int StartTime { get; set; }
+            public double ResponseRatio { get; set; }
+        }
+
+        private List<SchedulingResult> RunHRRNAlgorithm(List<ProcessData> processes)
+        {
+            var results = new List<SchedulingResult>();
+            var currentTime = 0;
+
+            var remainingProcessStates = processes.Select(
+               p => new ProcessState
+               {
+                   Process = p,
+                   StartTime = -1
+               }
+           ).ToList();
+
+
+            while (remainingProcessStates.Count > 0)
+            {
+                var availableProcesses = remainingProcessStates.Where(ps => ps.Process.ArrivalTime <= currentTime).ToList();
+
+                if (availableProcesses.Count == 0)
+                {
+                    // No process has arrived yet, jump to next arrival time
+                    currentTime = remainingProcessStates.Min(ps => ps.Process.ArrivalTime);
+                    continue;
+                }
+
+                // Calculates response ratio for all available processes
+                availableProcesses.ForEach(ps =>
+                {
+                    var waitingTime = currentTime - ps.Process.ArrivalTime;
+                    ps.ResponseRatio = (double)(waitingTime + ps.Process.BurstTime) / ps.Process.BurstTime;
+                });
+
+                var nextProcess = availableProcesses.OrderByDescending(ps => ps.ResponseRatio).ThenBy(ps => ps.Process.ArrivalTime).ThenBy(ps => ps.Process.ProcessID).First();
+                nextProcess.StartTime = currentTime;
+
+                // Select process with the highest response ratio
+                var finishTime = nextProcess.StartTime + nextProcess.Process.BurstTime;
+                var waitingTime = nextProcess.StartTime - nextProcess.Process.ArrivalTime;
+                var turnaroundTime = finishTime - nextProcess.Process.ArrivalTime;
+                var responseRatio = processes.Count / remainingProcessStates.Count;
+
+                results.Add(new SchedulingResult
+                {
+                    ProcessID = nextProcess.Process.ProcessID,
+                    ArrivalTime = nextProcess.Process.ArrivalTime,
+                    BurstTime = nextProcess.Process.BurstTime,
+                    StartTime = nextProcess.StartTime,
+                    FinishTime = finishTime,
+                    WaitingTime = waitingTime,
+                    ResponseTime = nextProcess.StartTime - nextProcess.Process.ArrivalTime,
+                    TurnaroundTime = turnaroundTime
+                });
+
+                currentTime = finishTime;
+                remainingProcessStates.Remove(nextProcess);
+
+            }
+            return results.OrderBy(r => r.StartTime).ToList();
+        }
+            
 
         /// <summary>
         /// STUDENTS: Data structure for algorithm results
@@ -474,6 +625,7 @@ Instructions:
             public int StartTime { get; set; }
             public int FinishTime { get; set; }
             public int WaitingTime { get; set; }
+            public int ResponseTime { get; set; }
             public int TurnaroundTime { get; set; }
         }
 
@@ -493,6 +645,7 @@ Instructions:
             listView1.Columns.Add("Start", 80, HorizontalAlignment.Center);
             listView1.Columns.Add("Finish", 80, HorizontalAlignment.Center);
             listView1.Columns.Add("Waiting", 80, HorizontalAlignment.Center);
+            listView1.Columns.Add("Response", 80, HorizontalAlignment.Center);
             listView1.Columns.Add("Turnaround", 90, HorizontalAlignment.Center);
 
             // Add process results
@@ -504,22 +657,30 @@ Instructions:
                 item.SubItems.Add(result.StartTime.ToString());
                 item.SubItems.Add(result.FinishTime.ToString());
                 item.SubItems.Add(result.WaitingTime.ToString());
+                item.SubItems.Add(result.ResponseTime.ToString());
                 item.SubItems.Add(result.TurnaroundTime.ToString());
                 listView1.Items.Add(item);
             }
-            
+
             // Add summary statistics
+            double totalElapsedTime = (results.Max(r => r.FinishTime));
+            if (totalElapsedTime == 0) totalElapsedTime = 1; // Prevents divide by 0
             var avgWaiting = results.Average(r => r.WaitingTime);
             var avgTurnaround = results.Average(r => r.TurnaroundTime);
-            
+            var avgResponse = results.Average(r => r.ResponseTime);
+            var throughput = (double)results.Count / totalElapsedTime;
+            var cpuUtilization = (double)results.Sum(r => r.BurstTime) / totalElapsedTime * 100;
+
             var summaryItem = new ListViewItem("SUMMARY");
             summaryItem.SubItems.Add(algorithmName);
             summaryItem.SubItems.Add($"{results.Count} processes");
             summaryItem.SubItems.Add($"Avg Wait: {avgWaiting:F1}");
             summaryItem.SubItems.Add($"Avg Turn: {avgTurnaround:F1}");
-            summaryItem.SubItems.Add("");
-            summaryItem.SubItems.Add("");
+            summaryItem.SubItems.Add($"CPU Util: {cpuUtilization:F1}");
+            summaryItem.SubItems.Add($"Throughput: {throughput:F1}");
+            summaryItem.SubItems.Add($"Avg Response: {avgResponse:F1}");
             listView1.Items.Add(summaryItem);
+
 
             // TODO: STUDENTS - Add performance metrics calculation and display here
             // Required metrics for your project report:
@@ -529,7 +690,7 @@ Instructions:
             // 4. Throughput (processes/second) - number of processes / total time
             // 5. Response Time (RT) [Optional] - time from arrival to first execution
             // Display these metrics in the results view for comparison between algorithms
-            
+
             // TODO: STUDENTS - Add CSV export functionality for results data
             // Create a "Export Results" button in the results panel to save:
             // - Individual process results (what's shown in listView1)
@@ -552,7 +713,7 @@ Instructions:
             processDataGrid.DataSource = processTable;
             processDataGrid.AllowUserToAddRows = false;
             processDataGrid.AllowUserToDeleteRows = false;
-            
+
             // Set column widths and configure for larger datasets
             if (processDataGrid.Columns.Count > 0)
             {
@@ -560,7 +721,7 @@ Instructions:
                 processDataGrid.Columns[1].Width = 100; // Burst Time
                 processDataGrid.Columns[2].Width = 100; // Priority  
                 processDataGrid.Columns[3].Width = 100; // Arrival Time
-                
+
                 // STUDENTS: Performance optimizations for larger datasets
                 processDataGrid.VirtualMode = false; // Set to true if using 500+ processes
                 processDataGrid.RowHeadersVisible = false; // Save space
@@ -585,16 +746,16 @@ Instructions:
                         "Large Dataset Warning",
                         MessageBoxButtons.YesNo,
                         MessageBoxIcon.Question);
-                    
+
                     if (result == DialogResult.No)
                     {
                         txtProcess.Focus();
                         return;
                     }
                 }
-                
+
                 processTable.Clear();
-                
+
                 for (int i = 0; i < processCount; i++)
                 {
                     DataRow row = processTable.NewRow();
@@ -610,7 +771,7 @@ Instructions:
             }
             else
             {
-                MessageBox.Show($"Please enter a valid number of processes ({MIN_PROCESS_COUNT}-{MAX_PROCESS_COUNT})", 
+                MessageBox.Show($"Please enter a valid number of processes ({MIN_PROCESS_COUNT}-{MAX_PROCESS_COUNT})",
                     "Invalid Input", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtProcess.Focus();
             }
@@ -658,7 +819,7 @@ Instructions:
                         row["Arrival Time"] = 0;
                     }
                     break;
-                    
+
                 case 2: // Mixed Load
                     foreach (DataRow row in processTable.Rows)
                     {
@@ -667,7 +828,7 @@ Instructions:
                         row["Arrival Time"] = random.Next(0, 5);
                     }
                     break;
-                    
+
                 case 3: // Heavy Load
                     foreach (DataRow row in processTable.Rows)
                     {
@@ -676,7 +837,7 @@ Instructions:
                         row["Arrival Time"] = random.Next(0, 10);
                     }
                     break;
-                    
+
                 case 4: // Priority Demo
                     int priority = processTable.Rows.Count;
                     foreach (DataRow row in processTable.Rows)
@@ -687,9 +848,75 @@ Instructions:
                     }
                     break;
             }
-            
+
             cmbLoadExample.SelectedIndex = 0; // Reset dropdown
         }
+
+        /// <summary>
+        /// WIP
+        /// </summary>
+        private void ExportResultsButton_Click(object sender, EventArgs e)
+        {
+            if (listView1.Items.Count == 0)
+            {
+                MessageBox.Show("No process data to save. Please set process count first.",
+                    "No Data", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using (var saveDialog = new SaveFileDialog())
+            {
+                saveDialog.Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
+                saveDialog.DefaultExt = "csv";
+                saveDialog.FileName = "ProcessData.csv";
+                saveDialog.Title = "Save Process Data";
+
+                if (saveDialog.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        using (var writer = new System.IO.StreamWriter(saveDialog.FileName))
+                        {
+                            // Write header
+                            writer.WriteLine("Process ID,Arrival Time,Burst Time,Start Time,Finish Time,Waiting Time,Response,Turnaround");
+                            // Write ListView items
+
+                            for (int i = 0; i < listView1.Items.Count - 1; i++)
+                            {
+                                var item = listView1.Items[i]; // each item represents a process
+                                List<string> metrics = new List<string>();
+                                foreach (ListViewItem.ListViewSubItem subItem in item.SubItems)
+                                {
+                                    System.Diagnostics.Debug.WriteLine(subItem.Text);
+                                    metrics.Add(subItem.Text);
+                                }
+                                writer.WriteLine(string.Join(",", metrics));
+                            }
+
+                            // Summary Metrics
+
+                            var summaryRow = listView1.Items[listView1.Items.Count - 1];
+                            writer.WriteLine("Summary Metrics");
+                            List<string> summaryMetrics = new List<string>();
+                            foreach (ListViewItem.ListViewSubItem subItem in summaryRow.SubItems)
+                            {
+                                summaryMetrics.Add(subItem.Text);
+                            }
+                            writer.WriteLine(string.Join(",", summaryMetrics));
+                        }
+
+                        MessageBox.Show($"Process data saved successfully to:\n{saveDialog.FileName}",
+                            "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error saving file: {ex.Message}",
+                            "Save Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
 
         /// <summary>
         /// STUDENTS: Saves DataGrid data to CSV file for external editing or backup
@@ -699,7 +926,7 @@ Instructions:
         {
             if (processTable.Rows.Count == 0)
             {
-                MessageBox.Show("No process data to save. Please set process count first.", 
+                MessageBox.Show("No process data to save. Please set process count first.",
                     "No Data", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
@@ -719,20 +946,20 @@ Instructions:
                         {
                             // Write header
                             writer.WriteLine("Process ID,Burst Time,Priority,Arrival Time");
-                            
+
                             // Write data rows
                             foreach (DataRow row in processTable.Rows)
                             {
                                 writer.WriteLine($"{row["Process ID"]},{row["Burst Time"]},{row["Priority"]},{row["Arrival Time"]}");
                             }
                         }
-                        
-                        MessageBox.Show($"Process data saved successfully to:\n{saveDialog.FileName}", 
+
+                        MessageBox.Show($"Process data saved successfully to:\n{saveDialog.FileName}",
                             "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Error saving file: {ex.Message}", 
+                        MessageBox.Show($"Error saving file: {ex.Message}",
                             "Save Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
@@ -762,7 +989,7 @@ Instructions:
                             var headerLine = reader.ReadLine();
                             if (headerLine == null)
                             {
-                                MessageBox.Show("The CSV file is empty.", "Load Error", 
+                                MessageBox.Show("The CSV file is empty.", "Load Error",
                                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
                                 return;
                             }
@@ -773,10 +1000,10 @@ Instructions:
                             {
                                 lineNumber++;
                                 var parts = line.Split(',');
-                                
+
                                 if (parts.Length != 4)
                                 {
-                                    MessageBox.Show($"Invalid format on line {lineNumber}. Expected format: ProcessID,BurstTime,Priority,ArrivalTime", 
+                                    MessageBox.Show($"Invalid format on line {lineNumber}. Expected format: ProcessID,BurstTime,Priority,ArrivalTime",
                                         "Load Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                                     return;
                                 }
@@ -793,7 +1020,7 @@ Instructions:
                                 }
                                 catch (FormatException)
                                 {
-                                    MessageBox.Show($"Invalid number format on line {lineNumber}.", 
+                                    MessageBox.Show($"Invalid number format on line {lineNumber}.",
                                         "Load Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                                     return;
                                 }
@@ -802,14 +1029,14 @@ Instructions:
 
                         if (loadedData.Count == 0)
                         {
-                            MessageBox.Show("No process data found in the CSV file.", "Load Error", 
+                            MessageBox.Show("No process data found in the CSV file.", "Load Error",
                                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             return;
                         }
 
                         if (loadedData.Count > MAX_PROCESS_COUNT)
                         {
-                            MessageBox.Show($"CSV contains {loadedData.Count} processes, but maximum allowed is {MAX_PROCESS_COUNT}. Loading first {MAX_PROCESS_COUNT} processes.", 
+                            MessageBox.Show($"CSV contains {loadedData.Count} processes, but maximum allowed is {MAX_PROCESS_COUNT}. Loading first {MAX_PROCESS_COUNT} processes.",
                                 "Process Count Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             loadedData = loadedData.Take(MAX_PROCESS_COUNT).ToList();
                         }
@@ -830,12 +1057,12 @@ Instructions:
                         txtProcess.Text = loadedData.Count.ToString();
                         cmbLoadExample.SelectedIndex = 0;
 
-                        MessageBox.Show($"Successfully loaded {loadedData.Count} processes from:\n{openDialog.FileName}", 
+                        MessageBox.Show($"Successfully loaded {loadedData.Count} processes from:\n{openDialog.FileName}",
                             "Load Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Error loading file: {ex.Message}", 
+                        MessageBox.Show($"Error loading file: {ex.Message}",
                             "Load Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
@@ -858,7 +1085,7 @@ Instructions:
 
                 // Update Results tab with detailed scheduling results
                 DisplaySchedulingResults(results, "FCFS - First Come First Serve");
-                
+
                 // Switch to Results panel and update sidebar
                 ShowPanel(resultsPanel);
                 sidePanel.Height = btnDashBoard.Height;
@@ -866,7 +1093,7 @@ Instructions:
             }
             else
             {
-                MessageBox.Show("Please set process count and ensure the data grid has process data.", 
+                MessageBox.Show("Please set process count and ensure the data grid has process data.",
                     "No Process Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtProcess.Focus();
             }
@@ -887,7 +1114,7 @@ Instructions:
 
                 // Update Results tab with detailed scheduling results
                 DisplaySchedulingResults(results, "SJF - Shortest Job First");
-                
+
                 // Switch to Results panel and update sidebar
                 ShowPanel(resultsPanel);
                 sidePanel.Height = btnDashBoard.Height;
@@ -895,7 +1122,7 @@ Instructions:
             }
             else
             {
-                MessageBox.Show("Please set process count and ensure the data grid has process data.", 
+                MessageBox.Show("Please set process count and ensure the data grid has process data.",
                     "No Process Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtProcess.Focus();
             }
@@ -916,7 +1143,7 @@ Instructions:
 
                 // Update Results tab with detailed scheduling results
                 DisplaySchedulingResults(results, "Priority Scheduling (Higher # = Higher Priority)");
-                
+
                 // Switch to Results panel and update sidebar
                 ShowPanel(resultsPanel);
                 sidePanel.Height = btnDashBoard.Height;
@@ -924,7 +1151,61 @@ Instructions:
             }
             else
             {
-                MessageBox.Show("Please set process count and ensure the data grid has process data.", 
+                MessageBox.Show("Please set process count and ensure the data grid has process data.",
+                    "No Process Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtProcess.Focus();
+            }
+        }
+
+        /// <summary>
+        /// Executes the Shortest Time Remaining First algorithm using DataGrid data.
+        /// </summary>
+        private void ShortestTimeRemainingFirstButton_Click(object sender, EventArgs e)
+        {
+            var processData = GetProcessDataFromGrid();
+            if (processData.Count > 0)
+            {
+                // STUDENTS: Example implementation using DataGrid data
+                var results = RunSRTFAlgorithm(processData);
+
+                // Update Results tab with detailed scheduling results
+                DisplaySchedulingResults(results, "STRF - Shortest Time Remaining First");
+
+                // Switch to Results panel and update sidebar
+                ShowPanel(resultsPanel);
+                sidePanel.Height = btnDashBoard.Height;
+                sidePanel.Top = btnDashBoard.Top;
+            }
+            else
+            {
+                MessageBox.Show("Please set process count and ensure the data grid has process data.",
+                    "No Process Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtProcess.Focus();
+            }
+        }
+
+        /// <summary>
+        /// Executes the Highest Response Ratio Next algorithm using DataGrid data.
+        /// </summary>
+        private void HighestResponseRatioNextButton_Click(object sender, EventArgs e)
+        {
+            var processData = GetProcessDataFromGrid();
+            if (processData.Count > 0)
+            {
+                // STUDENTS: Example implementation using DataGrid data
+                var results = RunHRRNAlgorithm(processData);
+
+                // Update Results tab with detailed scheduling results
+                DisplaySchedulingResults(results, "HRRN - Highest Response Ratio Next");
+
+                // Switch to Results panel and update sidebar
+                ShowPanel(resultsPanel);
+                sidePanel.Height = btnDashBoard.Height;
+                sidePanel.Top = btnDashBoard.Top;
+            }
+            else
+            {
+                MessageBox.Show("Please set process count and ensure the data grid has process data.",
                     "No Process Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtProcess.Focus();
             }
@@ -958,13 +1239,13 @@ Instructions:
         {
             GraphicsPath path = new GraphicsPath();
             Rectangle rect = new Rectangle(0, 0, button.Width - 1, button.Height - 1);
-            
+
             path.AddArc(rect.X, rect.Y, radius, radius, 180, 90);
             path.AddArc(rect.X + rect.Width - radius, rect.Y, radius, radius, 270, 90);
             path.AddArc(rect.X + rect.Width - radius, rect.Y + rect.Height - radius, radius, radius, 0, 90);
             path.AddArc(rect.X, rect.Y + rect.Height - radius, radius, radius, 90, 90);
             path.CloseAllFigures();
-            
+
             button.Region = new Region(path);
             button.FlatStyle = FlatStyle.Flat;
             button.FlatAppearance.BorderSize = 0;
@@ -980,21 +1261,21 @@ Instructions:
             sidePanel.Top = btnWelcome.Top;
             listView1.View = View.Details;
             listView1.GridLines = true;
-            
+
             // Initialize Results panel with placeholder message
             listView1.Clear();
             listView1.Columns.Add("Information", 400, HorizontalAlignment.Left);
             var welcomeItem = new ListViewItem("No results yet");
             welcomeItem.SubItems.Add("Run a scheduling algorithm to see results here");
             listView1.Items.Add(welcomeItem);
-            
+
             // Initialize Welcome and About content
             InitializeWelcomeContent();
             InitializeAboutContent();
-            
+
             // Load default process data for immediate use
             LoadDefaultProcessData();
-            
+
             // Apply rounded corners to all buttons for modern UI
             ApplyRoundedCorners(btnSetProcessCount);
             ApplyRoundedCorners(btnGenerateRandom);
@@ -1006,10 +1287,10 @@ Instructions:
             ApplyRoundedCorners(btnPriority);
             ApplyRoundedCorners(btnRoundRobin);
             ApplyRoundedCorners(btnDarkModeToggle);
-            
+
             // Apply default dark theme
             ApplyTheme();
-            
+
             // Show Welcome panel by default
             ShowPanel(welcomePanel);
         }
@@ -1033,7 +1314,7 @@ Instructions:
 
             // Set the process count text to match
             txtProcess.Text = "5";
-            
+
             // Set combo box to default selection
             cmbLoadExample.SelectedIndex = 0;
         }
@@ -1063,43 +1344,43 @@ Instructions:
         {
             // Main form background
             this.BackColor = Color.FromArgb(45, 45, 48);
-            
+
             // Sidebar panel
             panel1.BackColor = Color.FromArgb(37, 37, 38);
             sidePanel.BackColor = Color.FromArgb(0, 122, 204); // Blue accent
-            
+
             // All sidebar buttons
             ApplyDarkThemeToButton(btnWelcome);
             ApplyDarkThemeToButton(btnCpuScheduler);
             ApplyDarkThemeToButton(btnDashBoard);
             ApplyDarkThemeToButton(btnAbout);
             ApplyDarkThemeToButton(btnDarkModeToggle);
-            
+
             // Restart label
             restartApp.BackColor = Color.FromArgb(37, 37, 38);
             restartApp.ForeColor = Color.FromArgb(241, 241, 241);
-            
+
             // Copyright label
             label1.ForeColor = Color.FromArgb(153, 153, 153);
-            
+
             // Content panels
             contentPanel.BackColor = Color.FromArgb(30, 30, 30);
             welcomePanel.BackColor = Color.FromArgb(30, 30, 30);
             schedulerPanel.BackColor = Color.FromArgb(30, 30, 30);
             resultsPanel.BackColor = Color.FromArgb(30, 30, 30);
             aboutPanel.BackColor = Color.FromArgb(30, 30, 30);
-            
+
             // Text boxes
             welcomeTextBox.BackColor = Color.FromArgb(37, 37, 38);
             welcomeTextBox.ForeColor = Color.FromArgb(241, 241, 241);
             aboutTextBox.BackColor = Color.FromArgb(37, 37, 38);
             aboutTextBox.ForeColor = Color.FromArgb(241, 241, 241);
-            
+
             // Process input controls
             labelProcess.ForeColor = Color.FromArgb(241, 241, 241);
             txtProcess.BackColor = Color.FromArgb(51, 51, 55);
             txtProcess.ForeColor = Color.FromArgb(241, 241, 241);
-            
+
             // Data grid
             processDataGrid.BackgroundColor = Color.FromArgb(37, 37, 38);
             processDataGrid.DefaultCellStyle.BackColor = Color.FromArgb(51, 51, 55);
@@ -1107,15 +1388,15 @@ Instructions:
             processDataGrid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(45, 45, 48);
             processDataGrid.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(241, 241, 241);
             processDataGrid.GridColor = Color.FromArgb(62, 62, 66);
-            
+
             // Combo box
             cmbLoadExample.BackColor = Color.FromArgb(51, 51, 55);
             cmbLoadExample.ForeColor = Color.FromArgb(241, 241, 241);
-            
+
             // ListView (Results)
             listView1.BackColor = Color.FromArgb(37, 37, 38);
             listView1.ForeColor = Color.FromArgb(241, 241, 241);
-            
+
             // All scheduler buttons with dark theme colors
             ApplyDarkThemeToSchedulerButton(btnSetProcessCount);
             ApplyDarkThemeToSchedulerButton(btnGenerateRandom);
@@ -1135,43 +1416,43 @@ Instructions:
         {
             // Main form background
             this.BackColor = SystemColors.Control;
-            
+
             // Sidebar panel
             panel1.BackColor = SystemColors.InactiveBorder;
             sidePanel.BackColor = Color.SeaGreen;
-            
+
             // All sidebar buttons
             ApplyLightThemeToButton(btnWelcome);
             ApplyLightThemeToButton(btnCpuScheduler);
             ApplyLightThemeToButton(btnDashBoard);
             ApplyLightThemeToButton(btnAbout);
             ApplyLightThemeToButton(btnDarkModeToggle);
-            
+
             // Restart label
             restartApp.BackColor = SystemColors.InactiveBorder;
             restartApp.ForeColor = Color.DarkBlue;
-            
+
             // Copyright label
             label1.ForeColor = SystemColors.ControlText;
-            
+
             // Content panels
             contentPanel.BackColor = SystemColors.Control;
             welcomePanel.BackColor = SystemColors.Control;
             schedulerPanel.BackColor = SystemColors.Control;
             resultsPanel.BackColor = SystemColors.Control;
             aboutPanel.BackColor = SystemColors.Control;
-            
+
             // Text boxes
             welcomeTextBox.BackColor = SystemColors.Window;
             welcomeTextBox.ForeColor = SystemColors.WindowText;
             aboutTextBox.BackColor = SystemColors.Window;
             aboutTextBox.ForeColor = SystemColors.WindowText;
-            
+
             // Process input controls
             labelProcess.ForeColor = SystemColors.ControlText;
             txtProcess.BackColor = SystemColors.Window;
             txtProcess.ForeColor = SystemColors.WindowText;
-            
+
             // Data grid
             processDataGrid.BackgroundColor = SystemColors.Window;
             processDataGrid.DefaultCellStyle.BackColor = SystemColors.Window;
@@ -1179,28 +1460,28 @@ Instructions:
             processDataGrid.ColumnHeadersDefaultCellStyle.BackColor = SystemColors.Control;
             processDataGrid.ColumnHeadersDefaultCellStyle.ForeColor = SystemColors.ControlText;
             processDataGrid.GridColor = SystemColors.ControlDark;
-            
+
             // Combo box
             cmbLoadExample.BackColor = SystemColors.Window;
             cmbLoadExample.ForeColor = SystemColors.WindowText;
-            
+
             // ListView (Results)
             listView1.BackColor = SystemColors.Window;
             listView1.ForeColor = SystemColors.WindowText;
-            
+
             // All scheduler buttons with original light colors
             ApplyLightThemeToSchedulerButton(btnSetProcessCount);
             ApplyLightThemeToSchedulerButton(btnGenerateRandom);
             ApplyLightThemeToSchedulerButton(btnClearAll);
             ApplyLightThemeToSchedulerButton(btnSaveData);
             ApplyLightThemeToSchedulerButton(btnLoadData);
-            
+
             // Algorithm buttons with their original colors
             btnFCFS.BackColor = Color.Beige;
             btnSJF.BackColor = Color.AntiqueWhite;
             btnPriority.BackColor = Color.Bisque;
             btnRoundRobin.BackColor = Color.PapayaWhip;
-            
+
             // Reset text color for algorithm buttons
             btnFCFS.ForeColor = SystemColors.ControlText;
             btnSJF.ForeColor = SystemColors.ControlText;
@@ -1262,10 +1543,10 @@ Instructions:
             {
                 // Prompt for quantum time - this is algorithm-specific parameter
                 string quantumInput = Microsoft.VisualBasic.Interaction.InputBox(
-                    "Enter quantum time for Round Robin scheduling:", 
-                    "Quantum Time", 
+                    "Enter quantum time for Round Robin scheduling:",
+                    "Quantum Time",
                     "4");
-                
+
                 if (int.TryParse(quantumInput, out int quantumTime) && quantumTime > 0)
                 {
                     // STUDENTS: Updated implementation using DataGrid data
@@ -1273,7 +1554,7 @@ Instructions:
 
                     // Update Results tab with detailed scheduling results
                     DisplaySchedulingResults(results, $"Round Robin (Quantum = {quantumTime})");
-                    
+
                     // Switch to Results panel and update sidebar
                     ShowPanel(resultsPanel);
                     sidePanel.Height = btnDashBoard.Height;
@@ -1281,13 +1562,13 @@ Instructions:
                 }
                 else
                 {
-                    MessageBox.Show("Please enter a valid quantum time (positive integer).", 
+                    MessageBox.Show("Please enter a valid quantum time (positive integer).",
                         "Invalid Quantum Time", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
             else
             {
-                MessageBox.Show("Please set process count and ensure the data grid has process data.", 
+                MessageBox.Show("Please set process count and ensure the data grid has process data.",
                     "No Process Data", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtProcess.Focus();
             }
@@ -1347,7 +1628,7 @@ Instructions:
             }
 
             // Draw text
-            TextRenderer.DrawText(g, Text, Font, ClientRectangle, ForeColor, 
+            TextRenderer.DrawText(g, Text, Font, ClientRectangle, ForeColor,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
 
             path.Dispose();
