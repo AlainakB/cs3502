@@ -88,12 +88,14 @@ int main(int argc, char* argv[]) {
         printf("Producer %d: Produced value %d\n", producer_id, item.value);
         
         // TODO: Exit critical section
-
-        buffer - > buffer [ buffer - > head ] = item ;
-        buffer - > head = ( buffer - > head + 1) % BUFFER_SIZE ;
-        buffer - > count ++;
+        buffer -> buffer [buffer -> head] = item;
+        buffer -> head = (buffer -> head + 1) % BUFFER_SIZE;
+        buffer -> count++;
         
         // TODO: Signal item available
+        printf ("Producer %d: Produced value %d \n", producer_id, item.value);
+        sem_post (mutex); // Exit critical section
+        sem_post (full); // Signal item available
         
         // Simulate production time
         usleep(rand() % 100000);
