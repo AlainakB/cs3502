@@ -1,6 +1,8 @@
 // ============================================
 // consumer.c - Consumer process starter
 // ============================================
+//
+
 #include "buffer.h"
 
 // Global variables for cleanup
@@ -45,8 +47,17 @@ int main(int argc, char* argv[]) {
     srand(time(NULL) + consumer_id * 100);
     
     // TODO: Attach to shared memory
+    shm_id = shmget (SHM_KEY, sizeof(shared_buffer_t),
+    IPC_CREAT | 0666);
+    if (shm_id < 0) {
+       perror("shmget - failed");
+       exit(1);
+    }
     
     // TODO: Open semaphores (don't use O_CREAT - producer creates them)
+    sem_t* mutex = sem_open ("/sem_mutex", 0);
+    sem_t* empty = sem_open ("/sem_empty", 0);
+    sem_t* full = sem_open ("/sem_full", 0);
     
     printf("Consumer %d: Starting to consume %d items\n", consumer_id, num_items);
     
@@ -55,7 +66,6 @@ int main(int argc, char* argv[]) {
         usleep(rand() % 100000); // Simulate work
         
         // TODO: Wait for full slot
-
         sem_wait(full); // Wait for item
         
         // TODO: Enter critical section

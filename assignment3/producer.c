@@ -47,10 +47,10 @@ int main(int argc, char* argv[]) {
     // TODO: Attach to shared memory
     int shm_id = shmget (SHM_KEY, sizeof(shared_buffer_t),
     IPC_CREAT | 0666);
-   if (shm_id < 0) {
+    if (shm_id < 0) {
        perror("shmget - failed");
        exit(1);
-   }
+    }
 
    shared_buffer_t* buffer = (shared_buffer_t*)shmat(shm_id, NULL, 0);
     if (buffer == (void*) -1) {
@@ -59,9 +59,9 @@ int main(int argc, char* argv[]) {
     }
     
     // TODO: Open semaphores
-    sem_t * mutex = sem_open ("/sem_mutex", O_CREAT, 0644, 1);
-    sem_t * empty = sem_open ("/sem_empty", O_CREAT, 0644, BUFFER_SIZE);
-    sem_t * full = sem_open ("/sem_full", O_CREAT, 0644, 0);
+    sem_t* mutex = sem_open ("/sem_mutex", O_CREAT, 0644, 1);
+    sem_t* empty = sem_open ("/sem_empty", O_CREAT, 0644, BUFFER_SIZE);
+    sem_t* full = sem_open ("/sem_full", O_CREAT, 0644, 0);
 
     if ( mutex == SEM_FAILED || empty == SEM_FAILED || full == SEM_FAILED ) {
         perror ("sem_open - failed");
@@ -84,7 +84,6 @@ int main(int argc, char* argv[]) {
         sem_wait(mutex);
 
         // TODO: Add item to buffer
-
         printf("Producer %d: Produced value %d\n", producer_id, item.value);
         
         // TODO: Exit critical section
