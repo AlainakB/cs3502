@@ -53,11 +53,18 @@ int main(int argc, char* argv[]) {
        perror("shmget - failed");
        exit(1);
     }
+
+    buffer = shmat(shm_id, NULL, 0);
+    if (buffer == (void*)-1)
+    {
+        perror("shmat - failed");
+        exit(1);
+    }
     
     // TODO: Open semaphores (don't use O_CREAT - producer creates them)
-    sem_t* mutex = sem_open ("/sem_mutex", 0);
-    sem_t* empty = sem_open ("/sem_empty", 0);
-    sem_t* full = sem_open ("/sem_full", 0);
+    mutex = sem_open ("/sem_mutex", 0);
+    empty = sem_open ("/sem_empty", 0);
+    full = sem_open ("/sem_full", 0);
     
     printf("Consumer %d: Starting to consume %d items\n", consumer_id, num_items);
     

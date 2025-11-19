@@ -59,13 +59,13 @@ int main(int argc, char* argv[]) {
     }
     
     // TODO: Open semaphores
-    sem_t* mutex = sem_open ("/sem_mutex", O_CREAT, 0644, 1);
-    sem_t* empty = sem_open ("/sem_empty", O_CREAT, 0644, BUFFER_SIZE);
-    sem_t* full = sem_open ("/sem_full", O_CREAT, 0644, 0);
+    mutex = sem_open("/sem_mutex", O_CREAT, 0644, 1);
+    empty = sem_open("/sem_empty", O_CREAT, 0644, BUFFER_SIZE);
+    full = sem_open("/sem_full", O_CREAT, 0644, 0);
 
-    if ( mutex == SEM_FAILED || empty == SEM_FAILED || full == SEM_FAILED ) {
-        perror ("sem_open - failed");
-        exit (1);
+    if (mutex == SEM_FAILED || empty == SEM_FAILED || full == SEM_FAILED) {
+        perror("sem_open - failed");
+        exit(1);
     }
     
     printf("Producer %d: Starting to produce %d items\n", producer_id, num_items);
