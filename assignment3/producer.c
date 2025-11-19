@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
        exit(1);
     }
 
-   shared_buffer_t* buffer = (shared_buffer_t*)shmat(shm_id, NULL, 0);
+    buffer = (shared_buffer_t*)shmat(shm_id, NULL, 0);
     if (buffer == (void*) -1) {
       perror("shmat - failed");
       exit(1);

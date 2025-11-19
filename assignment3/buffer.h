@@ -48,7 +48,7 @@ typedef struct {
     int head; // Next write position
     int tail; // Next read position
     int count; // Current items in buffer
-} shared_buffer_t ;
+} shared_buffer_t;
 
 
 #endif

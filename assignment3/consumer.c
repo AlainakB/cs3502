@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
     }
 
     buffer = shmat(shm_id, NULL, 0);
-    if (buffer == (void*)-1)
+    if (buffer == (void*) -1)
     {
         perror("shmat - failed");
         exit(1);
