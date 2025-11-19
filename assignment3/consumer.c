@@ -52,16 +52,30 @@ int main(int argc, char* argv[]) {
     
     // TODO: Main consumption loop
     for (int i = 0; i < num_items; i++) {
+        usleep(rand() % 100000); // Simulate work
+        
         // TODO: Wait for full slot
+
+        sem_wait(full); // Wait for item
         
         // TODO: Enter critical section
-        
+        sem_wait(mutex); // Enter critical section
+
         // TODO: Remove item from buffer
+        // Remove from buffer
+        item_t item = buffer -> buffer[buffer -> tail];
+        buffer -> tail = (buffer -> tail + 1) % BUFFER_SIZE;
+        buffer -> count--;
         
         // TODO: Exit critical section
+        printf("Consumer %d: Consumed value %d from Producer %d \n",
+        consumer_id, item.value, item.producer_id);
+
+        sem_post(mutex); // Exit critical section
         
         // TODO: Signal empty slot
-        
+        sem_post(empty); // Signal slot available
+
         // Simulate consumption time
         usleep(rand() % 100000);
     }

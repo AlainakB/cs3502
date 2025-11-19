@@ -45,17 +45,17 @@ int main(int argc, char* argv[]) {
     srand(time(NULL) + producer_id);
     
     // TODO: Attach to shared memory
-    int shm_id = shmget ( SHM_KEY , sizeof ( shared_buffer_t ) ,
-    IPC_CREAT | 0666) ;
-   if ( shm_id < 0) {
-       perror ( " shmget - failed " );
-       exit (1) ;
+    int shm_id = shmget (SHM_KEY, sizeof(shared_buffer_t),
+    IPC_CREAT | 0666);
+   if (shm_id < 0) {
+       perror("shmget - failed");
+       exit(1);
    }
 
-   shared_buffer_t * buffer = ( shared_buffer_t *) shmat (shm_id , NULL , 0);
-    if ( buffer == ( void *) -1) {
-      perror ( " shmat - failed " );
-      exit (1);
+   shared_buffer_t* buffer = (shared_buffer_t*)shmat(shm_id, NULL, 0);
+    if (buffer == (void*) -1) {
+      perror("shmat - failed");
+      exit(1);
     }
     
     // TODO: Open semaphores
@@ -78,24 +78,24 @@ int main(int argc, char* argv[]) {
         item.producer_id = producer_id;
         
         // TODO: Wait for empty slot
-        sem_wait (empty);
+        sem_wait(empty);
         
         // TODO: Enter critical section
-        sem_wait (mutex);
+        sem_wait(mutex);
 
         // TODO: Add item to buffer
 
         printf("Producer %d: Produced value %d\n", producer_id, item.value);
         
         // TODO: Exit critical section
-        buffer -> buffer [buffer -> head] = item;
+        buffer -> buffer[buffer -> head] = item;
         buffer -> head = (buffer -> head + 1) % BUFFER_SIZE;
         buffer -> count++;
         
         // TODO: Signal item available
-        printf ("Producer %d: Produced value %d \n", producer_id, item.value);
-        sem_post (mutex); // Exit critical section
-        sem_post (full); // Signal item available
+        printf("Producer %d: Produced value %d \n", producer_id, item.value);
+        sem_post(mutex); // Exit critical section
+        sem_post(full); // Signal item available
         
         // Simulate production time
         usleep(rand() % 100000);

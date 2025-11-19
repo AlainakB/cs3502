@@ -44,10 +44,10 @@ typedef struct {
 //   - Any other fields needed for synchronization
 
 typedef struct {
-    item_t buffer [ BUFFER_SIZE ];
-    int head ; // Next write position
-    int tail ; // Next read position
-    int count ; // Current items in buffer
+    item_t buffer[BUFFER_SIZE];
+    int head; // Next write position
+    int tail; // Next read position
+    int count; // Current items in buffer
 } shared_buffer_t ;
 
 
