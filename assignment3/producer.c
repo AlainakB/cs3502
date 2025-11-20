@@ -1,5 +1,7 @@
 // ============================================
 // producer.c - Producer process starter
+// Name: Alaina Bastien
+// Section: 04
 // ============================================
 #include "buffer.h"
 
@@ -92,7 +94,6 @@ int main(int argc, char* argv[]) {
         buffer -> count++;
         
         // TODO: Signal item available
-        printf("Producer %d: Produced value %d \n", producer_id, item.value);
         sem_post(mutex); // Exit critical section
         sem_post(full); // Signal item available
         

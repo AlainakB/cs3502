@@ -1,7 +1,8 @@
 // ============================================
 // consumer.c - Consumer process starter
+// Name: Alaina Bastien
+// Section: 04
 // ============================================
-//
 
 #include "buffer.h"
 
